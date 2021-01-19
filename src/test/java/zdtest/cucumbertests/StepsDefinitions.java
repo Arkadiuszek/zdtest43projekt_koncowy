@@ -11,6 +11,9 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import zdtest.devToPages.MainPage;
+import zdtest.devToPages.PodcastsPage;
+import zdtest.devToPages.SinglePodcastPage;
 
 import java.util.concurrent.TimeUnit;
 
@@ -26,6 +29,10 @@ public class StepsDefinitions {
     String firstPodcastFromListLink;
     String firstVideoUrl;
 
+    MainPage mainPage;
+    PodcastsPage podcastsPage;
+    SinglePodcastPage singlePodcastPage;
+
     @Before
     public void setup(){
         System.setProperty("webdriver.chrome.driver","C:\\chromedriver\\chromedriver.exe");
@@ -36,39 +43,35 @@ public class StepsDefinitions {
 
     @Given("DevTo main page is open")
     public void devto_main_page_is_open() {
-        driver.get("https://dev.to");
+        mainPage = new MainPage(driver);
     }
 
     @When("User click on podcasts")
     public void user_click_on_podcasts() {
-        WebElement podcasts = driver.findElement(By.partialLinkText("Podcasts"));
-        podcasts.click();
+        mainPage.goToPodcasts();
     }
     @When("User select first podcast")
     public void user_select_first_podcast() {
-        wait.until(ExpectedConditions.urlToBe("https://dev.to/pod"));
-        WebElement firstPodcast = driver.findElement(By.cssSelector(".content > h3:first-child"));
-        podcastTitleFromList = firstPodcast.getText();
-        firstPodcastFromListLink = driver.findElement(By.cssSelector("#substories > a:first-child")).getAttribute("href");
-        firstPodcast.click();
+        podcastsPage = new PodcastsPage(driver);
+        wait.until(ExpectedConditions.urlToBe(podcastsPage.url));
+        podcastTitleFromList = podcastsPage.firstPodcast.getText();
+        firstPodcastFromListLink = podcastsPage.firstPodcastHrefElement.getAttribute("href");
+        podcastsPage.selectFirstPodcast();
     }
+
     @Then("User can see its title")
     public void user_can_see_its_title() {
         wait.until(ExpectedConditions.urlToBe(firstPodcastFromListLink));
-        WebElement podcastTitle = driver.findElement(By.cssSelector(".title > h1:nth-child(2)"));
-        String podcastTitleText = podcastTitle.getText();
+        singlePodcastPage = new SinglePodcastPage(driver);
+        String podcastTitleText = singlePodcastPage.podcastTitle.getText();
         assertTrue(podcastTitleFromList.contains(podcastTitleText));
     }
     @Then("User can play it")
     public void user_can_play_it() {
-        WebElement record = driver.findElement(By.className("record"));
-        record.click();
-        WebElement initializing = driver.findElement(By.className("status-message"));
-        wait.until(ExpectedConditions.invisibilityOf(initializing));
-
-        WebElement recordWrapper = driver.findElement(By.className("record-wrapper"));
-        Boolean isPodcastPlayed = recordWrapper.getAttribute("class").contains("playing");
-
+        singlePodcastPage.playPodcast();
+        wait.until(ExpectedConditions.invisibilityOf(singlePodcastPage.initializing));
+        String classAttribute = singlePodcastPage.recordWrapper.getAttribute("class");
+        Boolean isPodcastPlayed = classAttribute.contains("playing");
         assertTrue(isPodcastPlayed);
     }
 
